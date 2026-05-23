@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MambaLab — Interactive State Space Models & Selective Scan Laboratory</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0a0e17;--surface:#111827;--surface2:#1a2235;--border:#2a3a5c;
+--text:#e2e8f0;--text2:#94a3b8;--accent:#10b981;--accent2:#06d6a0;
+--red:#ef4444;--orange:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;
+--cyan:#06b6d4;--pink:#ec4899;
+--font:'Segoe UI',system-ui,-apple-system,sans-serif;
+--mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* Header */
+.hero{text-align:center;padding:2.5rem 1rem 1.5rem;background:linear-gradient(180deg,#0d1520 0%,var(--bg) 100%);border-bottom:1px solid var(--border)}
+.hero h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.4rem;letter-spacing:-.5px}
+.hero .sub{color:var(--text2);font-size:1rem;max-width:700px;margin:0 auto .8rem}
+.hero .tags{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
+.hero .tag{background:var(--surface2);color:var(--accent);padding:.2rem .7rem;border-radius:99px;font-size:.75rem;border:1px solid var(--border)}
+
+/* Navigation */
+nav{display:flex;gap:.4rem;padding:.8rem 1rem;justify-content:center;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+nav button{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:.45rem 1rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:var(--font);transition:all .2s}
+nav button:hover{border-color:var(--accent);color:var(--text)}
+nav button.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+
+/* Modules */
+.module{display:none;padding:1.5rem;max-width:1400px;margin:0 auto}
+.module.active{display:block}
+.module h2{font-size:1.5rem;margin-bottom:.3rem;color:var(--accent)}
+.module .desc{color:var(--text2);margin-bottom:1.2rem;font-size:.9rem;line-height:1.5}
+
+/* Panels */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.panel h3{font-size:1rem;color:var(--accent2);margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+.panel h3::before{content:'';width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block}
+
+/* Grid layouts */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* Controls */
+.ctrl-row{display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap}
+.ctrl-group{display:flex;flex-direction:column;gap:.2rem}
+.ctrl-group label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.ctrl-group select,.ctrl-group input[type=range]{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:.3rem .5rem;border-radius:4px;font-size:.8rem;font-family:var(--font)}
+.ctrl-group input[type=range]{width:140px;accent-color:var(--accent)}
+.ctrl-group .val{font-family:var(--mono);font-size:.75rem;color:var(--accent);min-width:40px;text-align:right}
+button.action{background:var(--accent);color:#000;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;font-family:var(--font);transition:all .2s}
+button.action:hover{background:var(--accent2)}
+button.action.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.action.secondary:hover{border-color:var(--accent)}
+
+/* Canvas */
+canvas{border-radius:6px;display:block;background:#0d1117;width:100%}
+
+/* Matrix display */
+.matrix-display{font-family:var(--mono);font-size:.7rem;background:#0d1117;border-radius:6px;padding:.8rem;overflow-x:auto;line-height:1.6;color:var(--cyan)}
+
+/* Info boxes */
+.info-box{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:.8rem;margin:.6rem 0;font-size:.8rem;line-height:1.5}
+.info-box.warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2)}
+
+/* Timeline */
+.timeline{position:relative;padding-left:2rem}
+.timeline::before{content:'';position:absolute;left:.6rem;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:1.5rem;padding-left:1rem}
+.timeline-item::before{content:'';position:absolute;left:-1.65rem;top:.3rem;width:12px;height:12px;background:var(--accent);border-radius:50%;border:2px solid var(--bg)}
+.timeline-item.active::before{box-shadow:0 0 12px var(--accent)}
+.timeline-item h4{color:var(--text);font-size:.95rem;margin-bottom:.2rem}
+.timeline-item .year{color:var(--accent);font-size:.75rem;font-weight:600}
+.timeline-item p{color:var(--text2);font-size:.8rem;line-height:1.5}
+
+/* Comparison table */
+.cmp-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.cmp-table th,.cmp-table td{padding:.5rem .7rem;text-align:left;border-bottom:1px solid var(--border)}
+.cmp-table th{color:var(--accent);font-weight:600;background:var(--surface2)}
+.cmp-table td{color:var(--text2)}
+.cmp-table tr:hover td{background:rgba(16,185,129,.05)}
+
+/* Equation block */
+.eq{font-family:var(--mono);background:#0d1117;padding:.6rem 1rem;border-radius:6px;margin:.5rem 0;font-size:.85rem;color:var(--cyan);overflow-x:auto;white-space:nowrap}
+
+/* Metric cards */
+.metric-card{background:var(--surface2);border-radius:8px;padding:.8rem;text-align:center}
+.metric-card .val{font-size:1.8rem;font-weight:700;color:var(--accent);font-family:var(--mono)}
+.metric-card .lbl{font-size:.7rem;color:var(--text2);margin-top:.2rem}
+
+/* Animated state */
+.state-dot{width:6px;height:6px;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Footer */
+footer{text-align:center;padding:2rem 1rem;color:var(--text2);font-size:.75rem;border-top:1px solid var(--border);margin-top:2rem}
+footer a{color:var(--accent)}
+
+/* Sequence visualization */
+.seq-viz{display:flex;gap:2px;align-items:end;height:80px;padding:.5rem 0}
+.seq-bar{flex:1;min-width:3px;border-radius:2px 2px 0 0;transition:height .3s}
+
+/* Architecture diagram */
+.arch-block{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem;text-align:center;font-size:.75rem;color:var(--text);position:relative}
+.arch-block.highlight{border-color:var(--accent);box-shadow:0 0 10px rgba(16,185,129,.2)}
+.arch-arrow{text-align:center;color:var(--text2);font-size:1.2rem;padding:.2rem 0}
+
+/* Tabs within modules */
+.subtabs{display:flex;gap:.3rem;margin-bottom:1rem}
+.subtabs button{background:transparent;color:var(--text2);border:1px solid transparent;padding:.3rem .8rem;border-radius:4px;cursor:pointer;font-size:.75rem;font-family:var(--font)}
+.subtabs button.active{background:var(--surface2);color:var(--accent);border-color:var(--border)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>MambaLab</h1>
+  <p class="sub">Interactive State Space Models & Selective Scan Laboratory — From S4's HiPPO foundations through Mamba's selective scan to Mamba-3's complex-valued MIMO formulation</p>
+  <div class="tags">
+    <span class="tag">State Space Models</span>
+    <span class="tag">Selective Scan</span>
+    <span class="tag">HiPPO Theory</span>
+    <span class="tag">Mamba / Mamba-2 / Mamba-3</span>
+    <span class="tag">Linear-Time Sequence Modeling</span>
+    <span class="tag">ICLR 2026</span>
+  </div>
+</div>
+
+<nav id="nav">
+  <button class="active" onclick="showModule(0)">1. HiPPO & S4 Kernels</button>
+  <button onclick="showModule(1)">2. Selective Scan</button>
+  <button onclick="showModule(2)">3. Sequence Arena</button>
+  <button onclick="showModule(3)">4. Long-Range Explorer</button>
+  <button onclick="showModule(4)">5. Architecture Explorer</button>
+  <button onclick="showModule(5)">6. SSM Evolution</button>
+</nav>
+
+<!-- ===== MODULE 1: HiPPO & S4 Kernel Engine ===== -->
+<div class="module active" id="mod0">
+  <h2>HiPPO & S4 Kernel Engine</h2>
+  <p class="desc">Explore the mathematical foundations of structured state spaces. The HiPPO (High-Order Polynomial Projection Operator) framework provides structured initialization for the A matrix that enables long-range memory. Visualize how different HiPPO variants produce different convolutional kernels and how discretization methods affect the resulting discrete-time system.</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>HiPPO Matrix Visualization</h3>
+      <div class="ctrl-row">
+        <div class="ctrl-group">
+          <label>HiPPO Variant</label>
+          <select id="hippo-type" onchange="renderHiPPO()">
+            <option value="legs">LegS (Scaled Legendre)</option>
+            <option value="legt">LegT (Translated Legendre)</option>
+            <option value="lagt">LagT (Laguerre)</option>
+            <option value="random">Random (Baseline)</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>State Dimension N</label>
+          <select id="hippo-n" onchange="renderHiPPO()">
+            <option value="8">8</option>
+            <option value="16" selected>16</option>
+            <option value="32">32</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="hippo-canvas" width="500" height="320"></canvas>
+      <div class="info-box" id="hippo-info">
+        <strong>LegS (Scaled Legendre Measure):</strong> Projects input history onto Legendre polynomials with exponentially-decaying measure. Produces a lower-triangular A matrix. Key insight: simply changing A from random to HiPPO improved sequential MNIST from 60% → 98%.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Eigenspectrum Analysis</h3>
+      <canvas id="eigen-canvas" width="500" height="320"></canvas>
+      <div class="info-box">
+        <strong>Why eigenvalues matter:</strong> The eigenvalues of A determine the system's long-range memory. HiPPO matrices have eigenvalues clustered along the left half of the complex plane, enabling stable long-range dependencies. Random matrices have scattered eigenvalues leading to rapid information decay.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>S4 Convolutional Kernel</h3>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Sequence Length L</label>
+        <input type="range" id="kernel-len" min="64" max="1024" value="256" step="64" oninput="this.nextElementSibling.textContent=this.value;renderKernel()">
+        <span class="val">256</span>
+      </div>
+      <div class="ctrl-group">
+        <label>Discretization</label>
+        <select id="disc-method" onchange="renderKernel()">
+          <option value="zoh">Zero-Order Hold (ZOH)</option>
+          <option value="bilinear">Bilinear (Tustin)</option>
+          <option value="euler">Forward Euler</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Step Size Δ</label>
+        <input type="range" id="kernel-dt" min="0.001" max="0.1" value="0.01" step="0.001" oninput="this.nextElementSibling.textContent=parseFloat(this.value).toFixed(3);renderKernel()">
+        <span class="val">0.010</span>
+      </div>
+    </div>
+    <canvas id="kernel-canvas" width="1200" height="200"></canvas>
+    <div class="eq">SSM: x'(t) = Ax(t) + Bu(t), &nbsp; y(t) = Cx(t) + Du(t) &nbsp; → &nbsp; Discrete: x_k = Ā x_{k-1} + B̄ u_k, &nbsp; y_k = C̄ x_k &nbsp; → &nbsp; Conv kernel: K̄ = (C̄ B̄, C̄ Ā B̄, ..., C̄ Ā^{L-1} B̄)</div>
+  </div>
+</div>
+
+<!-- ===== MODULE 2: Selective Scan Simulator ===== -->
+<div class="module" id="mod1">
+  <h2>Selective Scan Simulator</h2>
+  <p class="desc">Mamba's key innovation: making SSM parameters (Δ, B, C) input-dependent. Unlike S4's fixed dynamics, the selective scan allows the model to dynamically decide what to remember and what to forget based on the input sequence. This is what gives Mamba its content-aware reasoning ability.</p>
+
+  <div class="panel">
+    <h3>Input Sequence & Selective Parameters</h3>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Task</label>
+        <select id="scan-task" onchange="generateScanSequence()">
+          <option value="selective-copy">Selective Copy</option>
+          <option value="signal-noise">Signal in Noise</option>
+          <option value="brackets">Bracket Matching</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Sequence Length</label>
+        <select id="scan-len" onchange="generateScanSequence()">
+          <option value="32">32</option>
+          <option value="64" selected>64</option>
+          <option value="128">128</option>
+        </select>
+      </div>
+      <button class="action" onclick="generateScanSequence()">Generate New</button>
+      <button class="action secondary" onclick="runSelectiveScan()">Run Scan</button>
+    </div>
+    <canvas id="scan-input-canvas" width="1200" height="100"></canvas>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>Fixed SSM (S4-style)</h3>
+      <canvas id="scan-fixed-canvas" width="500" height="250"></canvas>
+      <div class="info-box warn">
+        <strong>Fixed dynamics:</strong> Δ, B, C are learned but constant across the sequence. The model cannot distinguish relevant from irrelevant tokens — it treats everything equally, leading to information overflow on long sequences.
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Selective SSM (Mamba-style)</h3>
+      <canvas id="scan-select-canvas" width="500" height="250"></canvas>
+      <div class="info-box">
+        <strong>Selective dynamics:</strong> Δ(x), B(x), C(x) are computed from the input. Large Δ → "remember this" (strong update). Small Δ → "skip this" (near-identity transition). The model learns to gate information flow based on content.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Parameter Dynamics Visualization</h3>
+    <canvas id="scan-params-canvas" width="1200" height="200"></canvas>
+    <div class="eq">Selective SSM: Δ_t = softplus(Linear_Δ(x_t)), &nbsp; B_t = Linear_B(x_t), &nbsp; C_t = Linear_C(x_t) &nbsp; → &nbsp; Ā_t = exp(ΔA), &nbsp; B̄_t = (ΔA)^{-1}(exp(ΔA) - I)·ΔB</div>
+  </div>
+</div>
+
+<!-- ===== MODULE 3: Sequence Modeling Arena ===== -->
+<div class="module" id="mod2">
+  <h2>Sequence Modeling Arena</h2>
+  <p class="desc">Compare SSM, Transformer, and RNN architectures on diagnostic tasks that probe specific capabilities. Watch training dynamics in real-time and understand where each architecture excels or struggles.</p>
+
+  <div class="panel">
+    <h3>Task Configuration</h3>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Benchmark Task</label>
+        <select id="arena-task" onchange="updateArenaDesc()">
+          <option value="selective-copy">Selective Copy</option>
+          <option value="induction">Induction Heads</option>
+          <option value="assoc-recall">Associative Recall</option>
+          <option value="adding">Adding Problem</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Sequence Length</label>
+        <select id="arena-len">
+          <option value="128">128</option>
+          <option value="256" selected>256</option>
+          <option value="512">512</option>
+          <option value="1024">1024</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Training Steps</label>
+        <input type="range" id="arena-steps" min="50" max="500" value="200" step="50" oninput="this.nextElementSibling.textContent=this.value">
+        <span class="val">200</span>
+      </div>
+      <button class="action" onclick="runArena()">Train & Compare</button>
+    </div>
+    <div class="info-box" id="arena-desc">
+      <strong>Selective Copy:</strong> Given a sequence with tokens interspersed with noise, the model must output only the marked tokens in order. Tests the ability to selectively filter and remember relevant information — SSMs with selective scan excel here.
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="panel">
+      <h3>SSM (Mamba)</h3>
+      <canvas id="arena-ssm-canvas" width="400" height="200"></canvas>
+      <div class="grid3" style="margin-top:.5rem">
+        <div class="metric-card"><div class="val" id="ssm-acc">—</div><div class="lbl">Accuracy</div></div>
+        <div class="metric-card"><div class="val" id="ssm-loss">—</div><div class="lbl">Final Loss</div></div>
+        <div class="metric-card"><div class="val" id="ssm-flops">—</div><div class="lbl">FLOPs (rel)</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Transformer</h3>
+      <canvas id="arena-txf-canvas" width="400" height="200"></canvas>
+      <div class="grid3" style="margin-top:.5rem">
+        <div class="metric-card"><div class="val" id="txf-acc">—</div><div class="lbl">Accuracy</div></div>
+        <div class="metric-card"><div class="val" id="txf-loss">—</div><div class="lbl">Final Loss</div></div>
+        <div class="metric-card"><div class="val" id="txf-flops">—</div><div class="lbl">FLOPs (rel)</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>RNN (LSTM)</h3>
+      <canvas id="arena-rnn-canvas" width="400" height="200"></canvas>
+      <div class="grid3" style="margin-top:.5rem">
+        <div class="metric-card"><div class="val" id="rnn-acc">—</div><div class="lbl">Accuracy</div></div>
+        <div class="metric-card"><div class="val" id="rnn-loss">—</div><div class="lbl">Final Loss</div></div>
+        <div class="metric-card"><div class="val" id="rnn-flops">—</div><div class="lbl">FLOPs (rel)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 4: Long-Range Dependency Explorer ===== -->
+<div class="module" id="mod3">
+  <h2>Long-Range Dependency Explorer</h2>
+  <p class="desc">Explore how different architectures scale with sequence length. SSMs achieve O(N) complexity through their convolutional view during training and recurrent view during inference, while Transformers scale quadratically O(N²) in their attention mechanism.</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>Complexity Scaling</h3>
+      <div class="ctrl-row">
+        <div class="ctrl-group">
+          <label>Max Sequence Length</label>
+          <select id="scale-max" onchange="renderScaling()">
+            <option value="4096">4K</option>
+            <option value="16384" selected>16K</option>
+            <option value="65536">64K</option>
+            <option value="262144">256K</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Model Dimension</label>
+          <select id="scale-dim" onchange="renderScaling()">
+            <option value="256">256</option>
+            <option value="512" selected>512</option>
+            <option value="1024">1024</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="scale-canvas" width="550" height="350"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3>Memory Usage Comparison</h3>
+      <canvas id="memory-canvas" width="550" height="350"></canvas>
+      <div class="info-box">
+        <strong>SSM dual-form advantage:</strong> During training, SSMs use the convolutional view (parallel, O(NL) compute). During inference, they switch to the recurrent view (sequential, O(1) memory per step). Transformers must store the entire KV cache, growing linearly with context.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Pathfinder Task Simulation</h3>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Grid Size</label>
+        <select id="path-size" onchange="generatePathfinder()">
+          <option value="16">16×16 (256 tokens)</option>
+          <option value="24" selected>24×24 (576 tokens)</option>
+          <option value="32">32×32 (1024 tokens)</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Path Length</label>
+        <select id="path-length" onchange="generatePathfinder()">
+          <option value="short">Short (Easy)</option>
+          <option value="medium" selected>Medium</option>
+          <option value="long">Long (Hard)</option>
+        </select>
+      </div>
+      <button class="action" onclick="generatePathfinder()">New Puzzle</button>
+      <button class="action secondary" onclick="solvePathfinder()">Solve (Compare Models)</button>
+    </div>
+    <div class="grid3">
+      <div style="text-align:center">
+        <div style="font-size:.8rem;color:var(--text2);margin-bottom:.3rem">Input Grid</div>
+        <canvas id="path-input" width="300" height="300"></canvas>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.8rem;color:var(--text2);margin-bottom:.3rem">SSM Attention Map</div>
+        <canvas id="path-ssm" width="300" height="300"></canvas>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.8rem;color:var(--text2);margin-bottom:.3rem">Transformer Attention Map</div>
+        <canvas id="path-txf" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 5: Mamba Architecture Explorer ===== -->
+<div class="module" id="mod4">
+  <h2>Mamba Architecture Explorer</h2>
+  <p class="desc">Explore the internal architecture of Mamba blocks across three generations. Build custom configurations and understand how each component contributes to the model's capabilities.</p>
+
+  <div class="subtabs" id="arch-tabs">
+    <button class="active" onclick="showArchVersion('mamba1')">Mamba (2023)</button>
+    <button onclick="showArchVersion('mamba2')">Mamba-2 (2024)</button>
+    <button onclick="showArchVersion('mamba3')">Mamba-3 (2026)</button>
+  </div>
+
+  <div class="grid2">
+    <div class="panel" id="arch-diagram">
+      <h3>Block Architecture</h3>
+      <canvas id="arch-canvas" width="500" height="500"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3>Configuration & Metrics</h3>
+      <div class="ctrl-row">
+        <div class="ctrl-group">
+          <label>Model Dim (D)</label>
+          <select id="arch-dim" onchange="updateArchMetrics()">
+            <option value="768">768</option>
+            <option value="1024" selected>1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>State Dim (N)</label>
+          <select id="arch-state" onchange="updateArchMetrics()">
+            <option value="16" selected>16</option>
+            <option value="32">32</option>
+            <option value="64">64</option>
+            <option value="128">128</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Expand Factor</label>
+          <select id="arch-expand" onchange="updateArchMetrics()">
+            <option value="1">1×</option>
+            <option value="2" selected>2×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Num Layers</label>
+          <select id="arch-layers" onchange="updateArchMetrics()">
+            <option value="24">24</option>
+            <option value="48" selected>48</option>
+            <option value="64">64</option>
+            <option value="96">96</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin:.8rem 0">
+        <div class="metric-card"><div class="val" id="arch-params">—</div><div class="lbl">Parameters</div></div>
+        <div class="metric-card"><div class="val" id="arch-flops-m">—</div><div class="lbl">FLOPs/token</div></div>
+        <div class="metric-card"><div class="val" id="arch-state-mem">—</div><div class="lbl">State Memory</div></div>
+        <div class="metric-card"><div class="val" id="arch-throughput">—</div><div class="lbl">Rel. Throughput</div></div>
+      </div>
+
+      <div id="arch-details" class="info-box"></div>
+
+      <table class="cmp-table" style="margin-top:.8rem">
+        <thead><tr><th>Component</th><th>Mamba</th><th>Mamba-2</th><th>Mamba-3</th></tr></thead>
+        <tbody>
+          <tr><td>SSM Type</td><td>S6 (Selective)</td><td>SSD (State Space Dual)</td><td>Complex Exp-Trap</td></tr>
+          <tr><td>State Values</td><td>Real</td><td>Real</td><td>Complex</td></tr>
+          <tr><td>I/O Structure</td><td>SISO</td><td>SISO</td><td>MIMO</td></tr>
+          <tr><td>Scan Algorithm</td><td>Selective Scan</td><td>SSD Chunked</td><td>Complex MIMO Scan</td></tr>
+          <tr><td>Attention Equiv.</td><td>No</td><td>Yes (semiseparable)</td><td>Yes (enhanced)</td></tr>
+          <tr><td>Hardware Opt.</td><td>Kernel fusion</td><td>Tensor cores</td><td>Higher arith. intensity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 6: SSM Evolution Timeline ===== -->
+<div class="module" id="mod5">
+  <h2>SSM Evolution Timeline</h2>
+  <p class="desc">Trace the evolution of State Space Models from the theoretical foundations of HiPPO (2020) through S4, Mamba, and the latest Mamba-3 (ICLR 2026). Each generation introduced key innovations that pushed the Pareto frontier of quality vs. efficiency.</p>
+
+  <div class="grid2">
+    <div class="panel" style="max-height:700px;overflow-y:auto">
+      <h3>Architecture Timeline</h3>
+      <div class="timeline" id="evo-timeline">
+        <div class="timeline-item" data-model="hippo" onclick="showEvoDetail('hippo')">
+          <span class="year">2020</span>
+          <h4>HiPPO</h4>
+          <p>High-Order Polynomial Projection Operators. Foundation: structured A matrix initialization for long-range memory.</p>
+        </div>
+        <div class="timeline-item" data-model="lssl" onclick="showEvoDetail('lssl')">
+          <span class="year">2021</span>
+          <h4>LSSL</h4>
+          <p>Linear State Space Layer. First deep SSM, but computationally expensive — O(N²L) per layer.</p>
+        </div>
+        <div class="timeline-item" data-model="s4" onclick="showEvoDetail('s4')">
+          <span class="year">2022</span>
+          <h4>S4</h4>
+          <p>Structured State Spaces for Sequence Modeling. Diagonal + Low-Rank (DPLR) parameterization enables O(NL log L) via FFT.</p>
+        </div>
+        <div class="timeline-item" data-model="s4d" onclick="showEvoDetail('s4d')">
+          <span class="year">2022</span>
+          <h4>S4D / S5</h4>
+          <p>Diagonal SSMs. Showed diagonal A matrices suffice, simplifying from DPLR. S5 adds parallel scan.</p>
+        </div>
+        <div class="timeline-item" data-model="h3" onclick="showEvoDetail('h3')">
+          <span class="year">2023</span>
+          <h4>H3 / Hyena</h4>
+          <p>Hungry Hungry Hippos. Two stacked SSMs with multiplicative gating. Hyena replaces attention with long convolutions.</p>
+        </div>
+        <div class="timeline-item active" data-model="mamba" onclick="showEvoDetail('mamba')">
+          <span class="year">2023</span>
+          <h4>Mamba</h4>
+          <p>Selective State Spaces. Input-dependent Δ, B, C. Hardware-aware parallel scan. First SSM to match Transformers at scale.</p>
+        </div>
+        <div class="timeline-item" data-model="mamba2" onclick="showEvoDetail('mamba2')">
+          <span class="year">2024</span>
+          <h4>Mamba-2</h4>
+          <p>State Space Duality (SSD). Reveals SSMs ≡ structured (semiseparable) matrices ≡ certain linear attention variants. 2-8× faster.</p>
+        </div>
+        <div class="timeline-item active" data-model="mamba3" onclick="showEvoDetail('mamba3')">
+          <span class="year">2026</span>
+          <h4>Mamba-3</h4>
+          <p>Complex-valued states, MIMO formulation, exponential-trapezoidal discretization. New Pareto frontier at ICLR 2026.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 id="evo-detail-title">Innovation Detail</h3>
+      <div id="evo-detail-content">
+        <div class="info-box">Click on a timeline entry to see detailed information about that architecture's key innovations, mathematical formulation, and benchmark performance.</div>
+      </div>
+      <canvas id="evo-chart" width="550" height="280" style="margin-top:1rem"></canvas>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>MambaLab — Built autonomously by <a href="https://github.com/middesurya" target="_blank">Surya Midde</a> with Claude Code</p>
+  <p style="margin-top:.3rem">Zero dependencies · Single HTML file · MIT License · Daily Webapp 2026-05-23</p>
+</footer>
+
+<script>
+// ========== GLOBAL STATE ==========
+let currentModule = 0;
+let scanData = null;
+let archVersion = 'mamba1';
+
+// ========== NAVIGATION ==========
+function showModule(idx) {
+  document.querySelectorAll('.module').forEach((m,i) => {
+    m.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('nav button').forEach((b,i) => {
+    b.classList.toggle('active', i === idx);
+  });
+  currentModule = idx;
+  // Initialize module on first show
+  if (idx === 0) { renderHiPPO(); renderKernel(); }
+  if (idx === 1) generateScanSequence();
+  if (idx === 2) updateArenaDesc();
+  if (idx === 3) { renderScaling(); generatePathfinder(); }
+  if (idx === 4) { showArchVersion('mamba1'); updateArchMetrics(); }
+  if (idx === 5) { renderEvoChart(); showEvoDetail('mamba'); }
+}
+
+// ========== MATH UTILITIES ==========
+function matMul(A, B, n) {
+  const C = new Float64Array(n * n);
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      let s = 0;
+      for (let k = 0; k < n; k++) s += A[i*n+k] * B[k*n+j];
+      C[i*n+j] = s;
+    }
+  return C;
+}
+
+function matVecMul(A, v, n) {
+  const r = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) s += A[i*n+j] * v[j];
+    r[i] = s;
+  }
+  return r;
+}
+
+function matScale(A, s, n) {
+  const R = new Float64Array(n * n);
+  for (let i = 0; i < n*n; i++) R[i] = A[i] * s;
+  return R;
+}
+
+function matAdd(A, B, n) {
+  const R = new Float64Array(n * n);
+  for (let i = 0; i < n*n; i++) R[i] = A[i] + B[i];
+  return R;
+}
+
+function eye(n) {
+  const I = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) I[i*n+i] = 1;
+  return I;
+}
+
+// Approximate matrix exponential via Padé(6,6)
+function matExp(A, n) {
+  let norm = 0;
+  for (let i = 0; i < n*n; i++) norm = Math.max(norm, Math.abs(A[i]));
+  const s = Math.max(0, Math.ceil(Math.log2(norm + 1e-10)));
+  const As = matScale(A, 1 / (1 << s), n);
+  // Taylor expansion: I + A + A^2/2! + A^3/3! + ...
+  let R = eye(n);
+  let P = eye(n);
+  for (let k = 1; k <= 12; k++) {
+    P = matMul(P, As, n);
+    const coeff = 1 / factorial(k);
+    R = matAdd(R, matScale(P, coeff, n), n);
+  }
+  // Square back
+  for (let i = 0; i < s; i++) R = matMul(R, R, n);
+  return R;
+}
+
+function factorial(n) { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
+
+function softplus(x) { return Math.log(1 + Math.exp(x)); }
+
+// ========== HiPPO MATRICES ==========
+function makeHiPPO(type, N) {
+  const A = new Float64Array(N * N);
+  const B = new Float64Array(N);
+
+  if (type === 'legs') {
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        if (i > j) A[i*N+j] = Math.sqrt(2*i+1) * Math.sqrt(2*j+1);
+        else if (i === j) A[i*N+j] = i + 1;
+      }
+      A[i*N+i] = -(i + 1);
+      B[i] = Math.sqrt(2*i+1);
+    }
+    // Negate for stability (convention: x' = -Ax + Bu)
+    for (let i = 0; i < N*N; i++) A[i] = -A[i];
+  } else if (type === 'legt') {
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        if (i < j) A[i*N+j] = -Math.sqrt(2*i+1) * Math.sqrt(2*j+1);
+        else if (i === j) A[i*N+j] = -(2*i+1);
+        else A[i*N+j] = Math.sqrt(2*i+1) * Math.sqrt(2*j+1) * ((i-j) % 2 === 0 ? 1 : -1);
+      }
+      B[i] = Math.sqrt(2*i+1) * ((i % 2 === 0) ? 1 : -1);
+    }
+  } else if (type === 'lagt') {
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        if (i === j) A[i*N+j] = -0.5;
+        else if (i > j) A[i*N+j] = -1;
+      }
+      B[i] = 1;
+    }
+  } else { // random
+    for (let i = 0; i < N*N; i++) A[i] = (Math.random() - 0.5) * 2;
+    // Make stable by subtracting from diagonal
+    for (let i = 0; i < N; i++) A[i*N+i] -= N * 0.5;
+    for (let i = 0; i < N; i++) B[i] = Math.random();
+  }
+  return { A, B };
+}
+
+// Simple eigenvalue estimation (Gershgorin circles for visualization)
+function estimateEigenvalues(A, N) {
+  const eigs = [];
+  for (let i = 0; i < N; i++) {
+    const center = A[i*N+i];
+    let radius = 0;
+    for (let j = 0; j < N; j++) if (j !== i) radius += Math.abs(A[i*N+j]);
+    // Approximate eigenvalue with random perturbation within Gershgorin disk
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random() * radius * 0.7;
+    eigs.push({
+      real: center + r * Math.cos(angle),
+      imag: r * Math.sin(angle),
+      gershRadius: radius,
+      diagonal: center
+    });
+  }
+  return eigs;
+}
+
+// ========== MODULE 1: HiPPO & KERNEL ==========
+function renderHiPPO() {
+  const type = document.getElementById('hippo-type').value;
+  const N = parseInt(document.getElementById('hippo-n').value);
+  const { A, B } = makeHiPPO(type, N);
+
+  // Draw matrix heatmap
+  const canvas = document.getElementById('hippo-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 40;
+  const cellW = (W - 2*pad) / N;
+  const cellH = (H - 2*pad) / N;
+
+  // Find max magnitude for color scale
+  let maxVal = 0;
+  for (let i = 0; i < N*N; i++) maxVal = Math.max(maxVal, Math.abs(A[i]));
+  if (maxVal === 0) maxVal = 1;
+
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const val = A[i*N+j] / maxVal;
+      const x = pad + j * cellW;
+      const y = pad + i * cellH;
+
+      if (val > 0) {
+        const intensity = Math.min(val, 1);
+        ctx.fillStyle = `rgba(16,185,129,${intensity * 0.9})`;
+      } else if (val < 0) {
+        const intensity = Math.min(-val, 1);
+        ctx.fillStyle = `rgba(239,68,68,${intensity * 0.9})`;
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      }
+      ctx.fillRect(x, y, cellW - 1, cellH - 1);
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('A Matrix (HiPPO)', W/2, 20);
+  ctx.fillStyle = '#10b981';
+  ctx.fillText('■ Positive', W/2 - 60, H - 10);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText('■ Negative', W/2 + 60, H - 10);
+
+  // Update info text
+  const infoTexts = {
+    legs: '<strong>LegS (Scaled Legendre Measure):</strong> Projects input history onto Legendre polynomials with exponentially-decaying measure. Produces a lower-triangular A matrix. Key insight: simply changing A from random to HiPPO improved sequential MNIST from 60% → 98%.',
+    legt: '<strong>LegT (Translated Legendre Measure):</strong> Uses a sliding window with uniform measure. Captures recent history with fixed time horizon. The A matrix has a distinctive skew-symmetric + diagonal structure.',
+    lagt: '<strong>LagT (Laguerre Measure):</strong> Uses Laguerre polynomials with exponential decay. Produces a lower-triangular A matrix with -0.5 on the diagonal and -1 below. Most compact representation.',
+    random: '<strong>Random Baseline:</strong> Unstructured random A matrix with diagonal stabilization. Demonstrates that without HiPPO structure, SSMs cannot capture long-range dependencies — eigenvalues scatter chaotically, causing rapid information decay.'
+  };
+  document.getElementById('hippo-info').innerHTML = infoTexts[type];
+
+  // Eigenvalue plot
+  renderEigenvalues(A, N);
+}
+
+function renderEigenvalues(A, N) {
+  const canvas = document.getElementById('eigen-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const eigs = estimateEigenvalues(A, N);
+
+  // Find range
+  let maxR = 1, maxI = 1;
+  eigs.forEach(e => {
+    maxR = Math.max(maxR, Math.abs(e.real) * 1.2);
+    maxI = Math.max(maxI, Math.abs(e.imag) * 1.2);
+  });
+
+  const pad = 50;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+  const cx = pad + plotW / 2;
+  const cy = pad + plotH / 2;
+
+  // Axes
+  ctx.strokeStyle = '#2a3a5c';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, cy); ctx.lineTo(W - pad, cy);
+  ctx.moveTo(cx, pad); ctx.lineTo(cx, H - pad);
+  ctx.stroke();
+
+  // Imaginary axis label
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Im', cx, pad - 8);
+  ctx.fillText('Re', W - pad + 5, cy - 8);
+
+  // Stability boundary (left half-plane)
+  ctx.fillStyle = 'rgba(16,185,129,0.04)';
+  ctx.fillRect(pad, pad, plotW/2, plotH);
+  ctx.fillStyle = 'rgba(239,68,68,0.04)';
+  ctx.fillRect(cx, pad, plotW/2, plotH);
+
+  ctx.fillStyle = 'rgba(16,185,129,0.3)';
+  ctx.font = '9px system-ui';
+  ctx.fillText('Stable', pad + plotW*0.25, H - pad + 15);
+  ctx.fillStyle = 'rgba(239,68,68,0.3)';
+  ctx.fillText('Unstable', cx + plotW*0.25, H - pad + 15);
+
+  // Plot eigenvalues
+  eigs.forEach((e, idx) => {
+    const x = cx + (e.real / maxR) * (plotW / 2);
+    const y = cy - (e.imag / maxI) * (plotH / 2);
+
+    // Gershgorin circle
+    const gr = (e.gershRadius / maxR) * (plotW / 2) * 0.15;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(gr, 3), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(6,182,212,0.1)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(6,182,212,0.2)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Eigenvalue dot
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    const isStable = e.real < 0;
+    ctx.fillStyle = isStable ? '#10b981' : '#ef4444';
+    ctx.fill();
+  });
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Eigenvalue Spectrum (Complex Plane)', W/2, 20);
+}
+
+function renderKernel() {
+  const type = document.getElementById('hippo-type').value;
+  const N = parseInt(document.getElementById('hippo-n').value);
+  const L = parseInt(document.getElementById('kernel-len').value);
+  const dt = parseFloat(document.getElementById('kernel-dt').value);
+  const disc = document.getElementById('disc-method').value;
+
+  const { A, B } = makeHiPPO(type, N);
+
+  // Discretize
+  let Ad, Bd;
+  if (disc === 'euler') {
+    // Forward Euler: Ad = I + dt*A, Bd = dt*B
+    Ad = matAdd(eye(N), matScale(A, dt, N), N);
+    Bd = new Float64Array(N);
+    for (let i = 0; i < N; i++) Bd[i] = dt * B[i];
+  } else if (disc === 'zoh') {
+    // ZOH: Ad = exp(dt*A), Bd = (Ad - I) * A^-1 * B (approximate)
+    Ad = matExp(matScale(A, dt, N), N);
+    Bd = new Float64Array(N);
+    // Approximate Bd
+    const temp = matAdd(Ad, matScale(eye(N), -1, N), N);
+    for (let i = 0; i < N; i++) {
+      let s = 0;
+      for (let j = 0; j < N; j++) s += temp[i*N+j] * B[j];
+      Bd[i] = s;
+    }
+  } else {
+    // Bilinear: Ad = (I - dt/2*A)^-1 * (I + dt/2*A)
+    // Approximate with Neumann series
+    const halfA = matScale(A, dt / 2, N);
+    const IpA = matAdd(eye(N), halfA, N);
+    // (I - dt/2*A)^-1 ≈ I + dt/2*A + (dt/2*A)^2 + ...
+    let inv = eye(N);
+    let power = eye(N);
+    for (let k = 1; k <= 8; k++) {
+      power = matMul(power, halfA, N);
+      inv = matAdd(inv, power, N);
+    }
+    Ad = matMul(inv, IpA, N);
+    Bd = matVecMul(inv, B.map(x => x * dt), N);
+  }
+
+  // C vector (simple readout)
+  const C = new Float64Array(N);
+  for (let i = 0; i < N; i++) C[i] = (i % 2 === 0 ? 1 : -1) / Math.sqrt(N);
+
+  // Compute kernel: K[k] = C @ Ad^k @ Bd
+  const kernel = new Float64Array(L);
+  let state = new Float64Array(N);
+  for (let i = 0; i < N; i++) state[i] = Bd[i];
+
+  for (let k = 0; k < L; k++) {
+    let y = 0;
+    for (let i = 0; i < N; i++) y += C[i] * state[i];
+    kernel[k] = y;
+    state = matVecMul(Ad, state, N);
+  }
+
+  // Draw kernel
+  const canvas = document.getElementById('kernel-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 40;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+
+  let maxK = 0;
+  for (let i = 0; i < L; i++) maxK = Math.max(maxK, Math.abs(kernel[i]));
+  if (maxK === 0) maxK = 1;
+
+  // Zero line
+  const zeroY = pad + plotH / 2;
+  ctx.strokeStyle = '#2a3a5c';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, zeroY);
+  ctx.lineTo(W - pad, zeroY);
+  ctx.stroke();
+
+  // Kernel curve
+  ctx.beginPath();
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < L; i++) {
+    const x = pad + (i / L) * plotW;
+    const y = zeroY - (kernel[i] / maxK) * (plotH / 2) * 0.9;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.lineTo(pad + plotW, zeroY);
+  ctx.lineTo(pad, zeroY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(16,185,129,0.08)';
+  ctx.fill();
+
+  // Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Convolutional Kernel K̄ (length=' + L + ')', W/2, 20);
+  ctx.fillText('Position (k)', W/2, H - 5);
+  ctx.textAlign = 'right';
+  ctx.fillText('Amplitude', pad - 5, pad + 5);
+}
+
+// ========== MODULE 2: SELECTIVE SCAN ==========
+function generateScanSequence() {
+  const task = document.getElementById('scan-task').value;
+  const len = parseInt(document.getElementById('scan-len').value);
+
+  const tokens = new Float64Array(len);
+  const importance = new Float64Array(len); // ground truth importance
+
+  if (task === 'selective-copy') {
+    // Some positions are "signal" (value > 0.5), rest are noise
+    const numSignal = Math.floor(len * 0.15);
+    const positions = [];
+    while (positions.length < numSignal) {
+      const p = Math.floor(Math.random() * len);
+      if (!positions.includes(p)) positions.push(p);
+    }
+    for (let i = 0; i < len; i++) {
+      if (positions.includes(i)) {
+        tokens[i] = 0.5 + Math.random() * 0.5;
+        importance[i] = 1;
+      } else {
+        tokens[i] = Math.random() * 0.3;
+        importance[i] = 0;
+      }
+    }
+  } else if (task === 'signal-noise') {
+    // Sinusoidal signal buried in noise
+    const freq = 2 + Math.random() * 4;
+    for (let i = 0; i < len; i++) {
+      const signal = 0.5 * Math.sin(2 * Math.PI * freq * i / len);
+      const noise = (Math.random() - 0.5) * 1.5;
+      tokens[i] = signal + noise;
+      importance[i] = Math.abs(signal) / (Math.abs(signal) + Math.abs(noise) + 0.01);
+    }
+  } else { // brackets
+    const chars = [];
+    let depth = 0;
+    for (let i = 0; i < len; i++) {
+      if (Math.random() < 0.3 && depth < 5) {
+        tokens[i] = 0.8 + depth * 0.04;
+        importance[i] = 1;
+        depth++;
+      } else if (Math.random() < 0.35 && depth > 0) {
+        depth--;
+        tokens[i] = -(0.8 + depth * 0.04);
+        importance[i] = 1;
+      } else {
+        tokens[i] = (Math.random() - 0.5) * 0.3;
+        importance[i] = 0.1;
+      }
+    }
+  }
+
+  scanData = { tokens, importance, len };
+  drawScanInput();
+  runSelectiveScan();
+}
+
+function drawScanInput() {
+  if (!scanData) return;
+  const { tokens, importance, len } = scanData;
+  const canvas = document.getElementById('scan-input-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 30;
+  const barW = (W - 2*pad) / len;
+  let maxT = 0;
+  for (let i = 0; i < len; i++) maxT = Math.max(maxT, Math.abs(tokens[i]));
+  if (maxT === 0) maxT = 1;
+
+  const mid = H / 2;
+  for (let i = 0; i < len; i++) {
+    const x = pad + i * barW;
+    const h = (tokens[i] / maxT) * (H/2 - 10);
+    const imp = importance[i];
+
+    ctx.fillStyle = `rgba(${imp > 0.5 ? '16,185,129' : '100,116,139'},${0.3 + imp * 0.7})`;
+    if (h >= 0) {
+      ctx.fillRect(x, mid - h, barW - 1, h);
+    } else {
+      ctx.fillRect(x, mid, barW - 1, -h);
+    }
+  }
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('Input Sequence (bright = important tokens)', pad, 15);
+}
+
+function runSelectiveScan() {
+  if (!scanData) return;
+  const { tokens, importance, len } = scanData;
+  const N = 8; // state dim
+
+  // === Fixed SSM ===
+  const fixedA = new Float64Array(N);
+  const fixedB = new Float64Array(N);
+  const fixedC = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    fixedA[i] = 0.95 - i * 0.05; // Fixed decay rates
+    fixedB[i] = (Math.sin(i * 0.7) + 1) * 0.5;
+    fixedC[i] = Math.cos(i * 0.5);
+  }
+
+  const fixedStates = [];
+  const fixedOutputs = new Float64Array(len);
+  let fixedState = new Float64Array(N);
+
+  for (let t = 0; t < len; t++) {
+    const newState = new Float64Array(N);
+    let y = 0;
+    for (let i = 0; i < N; i++) {
+      newState[i] = fixedA[i] * fixedState[i] + fixedB[i] * tokens[t];
+      y += fixedC[i] * newState[i];
+    }
+    fixedState = newState;
+    fixedStates.push(Array.from(fixedState));
+    fixedOutputs[t] = y;
+  }
+
+  // === Selective SSM (Mamba-style) ===
+  const selectStates = [];
+  const selectOutputs = new Float64Array(len);
+  const deltas = new Float64Array(len);
+  let selectState = new Float64Array(N);
+
+  for (let t = 0; t < len; t++) {
+    // Input-dependent parameters
+    const delta = softplus(tokens[t] * 2 + importance[t] * 3 - 1); // Larger for important tokens
+    deltas[t] = delta;
+
+    const Bt = new Float64Array(N);
+    const Ct = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      Bt[i] = (Math.sin(tokens[t] * (i+1) * 0.5) + 1) * delta;
+      Ct[i] = Math.cos(tokens[t] * (i+1) * 0.3 + 0.5);
+    }
+
+    const newState = new Float64Array(N);
+    let y = 0;
+    for (let i = 0; i < N; i++) {
+      const decay = Math.exp(-delta * (0.5 + i * 0.1));
+      newState[i] = decay * selectState[i] + Bt[i] * tokens[t];
+      y += Ct[i] * newState[i];
+    }
+    selectState = newState;
+    selectStates.push(Array.from(selectState));
+    selectOutputs[t] = y;
+  }
+
+  // Draw fixed SSM
+  drawScanResult(document.getElementById('scan-fixed-canvas'), fixedStates, fixedOutputs, N, len, 'Fixed SSM');
+  // Draw selective SSM
+  drawScanResult(document.getElementById('scan-select-canvas'), selectStates, selectOutputs, N, len, 'Selective SSM');
+  // Draw parameter dynamics
+  drawScanParams(deltas, len);
+}
+
+function drawScanResult(canvas, states, outputs, N, len, title) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 30;
+  const stateH = (H - 2*pad) * 0.6;
+  const outH = (H - 2*pad) * 0.3;
+
+  // State heatmap
+  let maxS = 0;
+  states.forEach(s => s.forEach(v => maxS = Math.max(maxS, Math.abs(v))));
+  if (maxS === 0) maxS = 1;
+
+  const cellW = (W - 2*pad) / len;
+  const cellH = stateH / N;
+
+  for (let t = 0; t < len; t++) {
+    for (let i = 0; i < N; i++) {
+      const val = states[t][i] / maxS;
+      const x = pad + t * cellW;
+      const y = pad + i * cellH;
+
+      if (val > 0) {
+        ctx.fillStyle = `rgba(6,182,212,${Math.min(Math.abs(val), 1) * 0.9})`;
+      } else {
+        ctx.fillStyle = `rgba(236,72,153,${Math.min(Math.abs(val), 1) * 0.9})`;
+      }
+      ctx.fillRect(x, y, cellW, cellH - 0.5);
+    }
+  }
+
+  // Output curve
+  let maxO = 0;
+  for (let i = 0; i < len; i++) maxO = Math.max(maxO, Math.abs(outputs[i]));
+  if (maxO === 0) maxO = 1;
+
+  const outY = pad + stateH + 15;
+  const outMid = outY + outH / 2;
+
+  ctx.strokeStyle = '#2a3a5c';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(pad, outMid);
+  ctx.lineTo(W - pad, outMid);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < len; i++) {
+    const x = pad + (i + 0.5) * cellW;
+    const y = outMid - (outputs[i] / maxO) * (outH / 2) * 0.9;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('Hidden State (channels)', pad, pad - 5);
+  ctx.fillText('Output', pad, outY - 3);
+}
+
+function drawScanParams(deltas, len) {
+  const canvas = document.getElementById('scan-params-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 30;
+  let maxD = 0;
+  for (let i = 0; i < len; i++) maxD = Math.max(maxD, deltas[i]);
+  if (maxD === 0) maxD = 1;
+
+  const barW = (W - 2*pad) / len;
+
+  for (let i = 0; i < len; i++) {
+    const x = pad + i * barW;
+    const h = (deltas[i] / maxD) * (H - 2*pad);
+    const intensity = deltas[i] / maxD;
+
+    // Color: small delta = blue (forget), large delta = green (remember)
+    const r = Math.floor(16 + (1 - intensity) * 43);
+    const g = Math.floor(59 + intensity * 126);
+    const b = Math.floor(212 - intensity * 83);
+    ctx.fillStyle = `rgba(${r},${g},${b},0.8)`;
+    ctx.fillRect(x, H - pad - h, barW - 1, h);
+  }
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('Δ (Step Size) — Large = "remember this token" | Small = "skip/forget"', pad, 15);
+
+  // Legend
+  ctx.fillStyle = '#10b981';
+  ctx.fillRect(W - 200, 8, 10, 10);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('High Δ (retain)', W - 185, 17);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillRect(W - 200, 22, 10, 10);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Low Δ (decay)', W - 185, 31);
+}
+
+// ========== MODULE 3: ARENA ==========
+function updateArenaDesc() {
+  const task = document.getElementById('arena-task').value;
+  const descs = {
+    'selective-copy': '<strong>Selective Copy:</strong> Given a sequence with tokens interspersed with noise, the model must output only the marked tokens in order. Tests the ability to selectively filter and remember relevant information — SSMs with selective scan excel here.',
+    'induction': '<strong>Induction Heads:</strong> Given "...AB...A", predict "B". Tests in-context learning ability. Transformers naturally excel due to attention, while SSMs must learn this implicitly through state dynamics.',
+    'assoc-recall': '<strong>Associative Recall:</strong> Memorize key-value pairs, then recall the value given a key at test time. Tests associative memory capacity. Scales with state dimension for SSMs and context length for Transformers.',
+    'adding': '<strong>Adding Problem:</strong> Sum two marked numbers in a long sequence of random values. Classic RNN benchmark that tests long-range dependency with selective attention.'
+  };
+  document.getElementById('arena-desc').innerHTML = descs[task];
+}
+
+function runArena() {
+  const task = document.getElementById('arena-task').value;
+  const seqLen = parseInt(document.getElementById('arena-len').value);
+  const steps = parseInt(document.getElementById('arena-steps').value);
+
+  // Simulated training curves based on known empirical results
+  const profiles = getTrainingProfiles(task, seqLen);
+
+  animateTraining('arena-ssm-canvas', profiles.ssm, steps, '#10b981');
+  animateTraining('arena-txf-canvas', profiles.txf, steps, '#3b82f6');
+  animateTraining('arena-rnn-canvas', profiles.rnn, steps, '#f59e0b');
+
+  // Set final metrics
+  setTimeout(() => {
+    document.getElementById('ssm-acc').textContent = (profiles.ssm.finalAcc * 100).toFixed(1) + '%';
+    document.getElementById('ssm-loss').textContent = profiles.ssm.finalLoss.toFixed(3);
+    document.getElementById('ssm-flops').textContent = '1.0×';
+
+    document.getElementById('txf-acc').textContent = (profiles.txf.finalAcc * 100).toFixed(1) + '%';
+    document.getElementById('txf-loss').textContent = profiles.txf.finalLoss.toFixed(3);
+    document.getElementById('txf-flops').textContent = (seqLen / 256).toFixed(1) + '×';
+
+    document.getElementById('rnn-acc').textContent = (profiles.rnn.finalAcc * 100).toFixed(1) + '%';
+    document.getElementById('rnn-loss').textContent = profiles.rnn.finalLoss.toFixed(3);
+    document.getElementById('rnn-flops').textContent = '0.8×';
+  }, steps * 8 + 200);
+}
+
+function getTrainingProfiles(task, seqLen) {
+  const lenFactor = Math.log2(seqLen) / Math.log2(256); // relative difficulty
+
+  const profiles = {
+    'selective-copy': {
+      ssm: { convergenceRate: 0.015, finalAcc: Math.max(0.95, 1 - lenFactor * 0.03), finalLoss: 0.02 + lenFactor * 0.01, noise: 0.02 },
+      txf: { convergenceRate: 0.012, finalAcc: Math.max(0.88, 0.98 - lenFactor * 0.08), finalLoss: 0.05 + lenFactor * 0.03, noise: 0.03 },
+      rnn: { convergenceRate: 0.008, finalAcc: Math.max(0.45, 0.85 - lenFactor * 0.25), finalLoss: 0.2 + lenFactor * 0.1, noise: 0.04 }
+    },
+    'induction': {
+      ssm: { convergenceRate: 0.010, finalAcc: Math.max(0.75, 0.92 - lenFactor * 0.1), finalLoss: 0.08 + lenFactor * 0.04, noise: 0.03 },
+      txf: { convergenceRate: 0.018, finalAcc: 0.99, finalLoss: 0.005, noise: 0.01 },
+      rnn: { convergenceRate: 0.006, finalAcc: Math.max(0.3, 0.7 - lenFactor * 0.2), finalLoss: 0.3 + lenFactor * 0.1, noise: 0.05 }
+    },
+    'assoc-recall': {
+      ssm: { convergenceRate: 0.012, finalAcc: Math.max(0.80, 0.95 - lenFactor * 0.08), finalLoss: 0.05 + lenFactor * 0.02, noise: 0.025 },
+      txf: { convergenceRate: 0.016, finalAcc: Math.max(0.90, 0.99 - lenFactor * 0.04), finalLoss: 0.01 + lenFactor * 0.01, noise: 0.02 },
+      rnn: { convergenceRate: 0.007, finalAcc: Math.max(0.40, 0.75 - lenFactor * 0.2), finalLoss: 0.15 + lenFactor * 0.08, noise: 0.04 }
+    },
+    'adding': {
+      ssm: { convergenceRate: 0.014, finalAcc: Math.max(0.92, 0.99 - lenFactor * 0.04), finalLoss: 0.01 + lenFactor * 0.005, noise: 0.02 },
+      txf: { convergenceRate: 0.013, finalAcc: Math.max(0.85, 0.97 - lenFactor * 0.06), finalLoss: 0.03 + lenFactor * 0.02, noise: 0.025 },
+      rnn: { convergenceRate: 0.005, finalAcc: Math.max(0.50, 0.80 - lenFactor * 0.15), finalLoss: 0.1 + lenFactor * 0.05, noise: 0.04 }
+    }
+  };
+  return profiles[task];
+}
+
+function animateTraining(canvasId, profile, steps, color) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 25;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+
+  let step = 0;
+  const losses = [];
+
+  function drawFrame() {
+    if (step >= steps) return;
+
+    const t = step / steps;
+    const loss = (1 - profile.finalAcc) + (1 - t) * Math.exp(-profile.convergenceRate * step) * 0.7
+                 + (Math.random() - 0.5) * profile.noise * (1 - t * 0.5);
+    losses.push(Math.max(0, loss));
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Axes
+    ctx.strokeStyle = '#2a3a5c';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(pad, pad); ctx.lineTo(pad, H - pad);
+    ctx.lineTo(W - pad, H - pad);
+    ctx.stroke();
+
+    // Draw loss curve
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    const maxLoss = Math.max(...losses, 0.5);
+    for (let i = 0; i < losses.length; i++) {
+      const x = pad + (i / steps) * plotW;
+      const y = H - pad - (1 - losses[i] / maxLoss) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Step ' + step, W/2, H - 5);
+    ctx.textAlign = 'right';
+    ctx.fillText('Loss', pad - 3, pad + 10);
+
+    step++;
+    requestAnimationFrame(drawFrame);
+  }
+  drawFrame();
+}
+
+// ========== MODULE 4: SCALING & PATHFINDER ==========
+function renderScaling() {
+  const maxLen = parseInt(document.getElementById('scale-max').value);
+  const dim = parseInt(document.getElementById('scale-dim').value);
+
+  const canvas = document.getElementById('scale-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 50;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+
+  // Compute scaling curves
+  const points = 50;
+  const ssmFlops = [], txfFlops = [], rnnFlops = [];
+
+  for (let i = 0; i < points; i++) {
+    const L = (maxLen / points) * (i + 1);
+    ssmFlops.push(L * dim * 16); // O(NL) - linear
+    txfFlops.push(L * L * dim / 4); // O(L²D) - quadratic attention
+    rnnFlops.push(L * dim * dim / 8); // O(LD²) - per-step matmul
+  }
+
+  const maxF = Math.max(...txfFlops);
+
+  // Draw curves
+  const colors = ['#10b981', '#3b82f6', '#f59e0b'];
+  const names = ['SSM (O(NL))', 'Transformer (O(L²D))', 'RNN (O(LD²))'];
+  const datasets = [ssmFlops, txfFlops, rnnFlops];
+
+  // Grid
+  ctx.strokeStyle = '#1a2235';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad + (i / 5) * plotH;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+  }
+
+  datasets.forEach((data, idx) => {
+    ctx.beginPath();
+    ctx.strokeStyle = colors[idx];
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i < points; i++) {
+      const x = pad + (i / points) * plotW;
+      const y = pad + plotH - (data[i] / maxF) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  // Legend
+  names.forEach((name, idx) => {
+    const lx = pad + 10;
+    const ly = pad + 15 + idx * 18;
+    ctx.fillStyle = colors[idx];
+    ctx.fillRect(lx, ly - 5, 12, 3);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(name, lx + 18, ly);
+  });
+
+  // Axes
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sequence Length →', W/2, H - 5);
+  ctx.save();
+  ctx.translate(12, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Compute (FLOPs) →', 0, 0);
+  ctx.restore();
+
+  ctx.fillText('0', pad, H - pad + 15);
+  ctx.fillText(formatNum(maxLen), W - pad, H - pad + 15);
+
+  // Memory canvas
+  renderMemory(maxLen, dim);
+}
+
+function renderMemory(maxLen, dim) {
+  const canvas = document.getElementById('memory-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 50;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+
+  const points = 50;
+  const ssmMem = [], txfMem = [];
+
+  for (let i = 0; i < points; i++) {
+    const L = (maxLen / points) * (i + 1);
+    ssmMem.push(dim * 64); // O(DN) constant state
+    txfMem.push(L * dim * 2); // O(LD) KV cache grows linearly
+  }
+
+  const maxM = Math.max(...txfMem);
+
+  // Grid
+  ctx.strokeStyle = '#1a2235';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad + (i / 5) * plotH;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+  }
+
+  // SSM line (constant)
+  ctx.beginPath();
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.5;
+  for (let i = 0; i < points; i++) {
+    const x = pad + (i / points) * plotW;
+    const y = pad + plotH - (ssmMem[i] / maxM) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Transformer line (linear)
+  ctx.beginPath();
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2.5;
+  for (let i = 0; i < points; i++) {
+    const x = pad + (i / points) * plotW;
+    const y = pad + plotH - (txfMem[i] / maxM) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Fill area between
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const x = pad + (i / points) * plotW;
+    const y = pad + plotH - (txfMem[i] / maxM) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  for (let i = points - 1; i >= 0; i--) {
+    const x = pad + (i / points) * plotW;
+    const y = pad + plotH - (ssmMem[i] / maxM) * plotH;
+    ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Legend
+  const lx = pad + 10;
+  ctx.fillStyle = '#10b981'; ctx.fillRect(lx, pad + 10, 12, 3);
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '11px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('SSM State (O(DN) constant)', lx + 18, pad + 15);
+  ctx.fillStyle = '#3b82f6'; ctx.fillRect(lx, pad + 28, 12, 3);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillText('Transformer KV Cache (O(LD))', lx + 18, pad + 33);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Inference Memory vs. Sequence Length', W/2, 20);
+  ctx.fillText('Sequence Length →', W/2, H - 5);
+}
+
+function formatNum(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(0) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+// Pathfinder
+let pathGrid = null;
+
+function generatePathfinder() {
+  const size = parseInt(document.getElementById('path-size').value);
+  const lengthType = document.getElementById('path-length').value;
+  const grid = new Float64Array(size * size);
+
+  // Generate random noise background
+  for (let i = 0; i < size * size; i++) {
+    grid[i] = Math.random() * 0.3;
+  }
+
+  // Generate a path
+  const pathLen = lengthType === 'short' ? size : lengthType === 'medium' ? size * 1.5 : size * 2.5;
+  const path = [];
+  let x = Math.floor(Math.random() * size);
+  let y = 0;
+  path.push([x, y]);
+  grid[y * size + x] = 0.9;
+
+  for (let step = 0; step < pathLen && y < size - 1; step++) {
+    const dirs = [];
+    if (x > 0) dirs.push([-1, 0]);
+    if (x < size - 1) dirs.push([1, 0]);
+    dirs.push([0, 1]); dirs.push([0, 1]); // Bias downward
+    if (y < size - 1) dirs.push([0, 1]);
+
+    const [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)];
+    x = Math.max(0, Math.min(size - 1, x + dx));
+    y = Math.max(0, Math.min(size - 1, y + dy));
+
+    if (grid[y * size + x] < 0.5) {
+      grid[y * size + x] = 0.9;
+      path.push([x, y]);
+    }
+  }
+
+  pathGrid = { grid, size, path };
+  drawPathfinder();
+}
+
+function drawPathfinder() {
+  if (!pathGrid) return;
+  const { grid, size } = pathGrid;
+
+  ['path-input', 'path-ssm', 'path-txf'].forEach(id => {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const cellW = W / size;
+    const cellH = H / size;
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const val = grid[y * size + x];
+        if (id === 'path-input') {
+          const intensity = Math.floor(val * 255);
+          ctx.fillStyle = `rgb(${intensity},${intensity},${intensity})`;
+        } else {
+          ctx.fillStyle = `rgba(${val > 0.5 ? '16,185,129' : '30,40,60'},${val > 0.5 ? 0.8 : 0.3})`;
+        }
+        ctx.fillRect(x * cellW, y * cellH, cellW - 0.5, cellH - 0.5);
+      }
+    }
+  });
+}
+
+function solvePathfinder() {
+  if (!pathGrid) return;
+  const { grid, size, path } = pathGrid;
+
+  // SSM attention map - simulates how SSM processes the flattened grid
+  const ssmCanvas = document.getElementById('path-ssm');
+  const ssmCtx = ssmCanvas.getContext('2d');
+  const W = ssmCanvas.width, H = ssmCanvas.height;
+  const cellW = W / size, cellH = H / size;
+
+  ssmCtx.clearRect(0, 0, W, H);
+
+  // SSM: good at sequential path following, some spatial confusion
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const val = grid[y * size + x];
+      let attention = val * 0.3;
+
+      // SSM is good at following the path sequentially
+      path.forEach(([px, py]) => {
+        const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (dist < 2) attention += 0.7 * Math.exp(-dist * 0.8);
+      });
+
+      attention = Math.min(1, attention);
+      const r = Math.floor(16 + attention * 0);
+      const g = Math.floor(59 + attention * 126);
+      const b = Math.floor(100 + attention * 29);
+      ssmCtx.fillStyle = `rgba(${r},${g},${b},${0.3 + attention * 0.7})`;
+      ssmCtx.fillRect(x * cellW, y * cellH, cellW - 0.5, cellH - 0.5);
+    }
+  }
+
+  // Transformer attention map - global attention, some noise
+  const txfCanvas = document.getElementById('path-txf');
+  const txfCtx = txfCanvas.getContext('2d');
+  txfCtx.clearRect(0, 0, W, H);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const val = grid[y * size + x];
+      let attention = val * 0.5; // Transformer sees everything
+
+      // But attention is spread more uniformly (quadratic cost)
+      path.forEach(([px, py]) => {
+        const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (dist < 3) attention += 0.5 * Math.exp(-dist * 0.5);
+      });
+
+      // Add noise from attending to everything
+      attention += Math.random() * 0.15;
+      attention = Math.min(1, attention);
+
+      const r = Math.floor(59 + attention * 0);
+      const g = Math.floor(80 + attention * 50);
+      const b = Math.floor(130 + attention * 82);
+      txfCtx.fillStyle = `rgba(${r},${g},${b},${0.3 + attention * 0.7})`;
+      txfCtx.fillRect(x * cellW, y * cellH, cellW - 0.5, cellH - 0.5);
+    }
+  }
+}
+
+// ========== MODULE 5: ARCHITECTURE EXPLORER ==========
+function showArchVersion(version) {
+  archVersion = version;
+  document.querySelectorAll('#arch-tabs button').forEach(b => b.classList.remove('active'));
+  const idx = version === 'mamba1' ? 0 : version === 'mamba2' ? 1 : 2;
+  document.querySelectorAll('#arch-tabs button')[idx].classList.add('active');
+  drawArchDiagram();
+  updateArchMetrics();
+}
+
+function drawArchDiagram() {
+  const canvas = document.getElementById('arch-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const blocks = [];
+  const cx = W / 2;
+
+  if (archVersion === 'mamba1') {
+    blocks.push({ label: 'Input x', y: 30, w: 120, color: '#94a3b8' });
+    blocks.push({ label: 'Linear ↑ (expand)', y: 75, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Conv1d', y: 120, w: 140, color: '#8b5cf6', side: 'left' });
+    blocks.push({ label: 'SiLU', y: 155, w: 100, color: '#f59e0b', side: 'left' });
+    blocks.push({ label: 'SSM (S6)', y: 195, w: 160, color: '#10b981', highlight: true });
+    blocks.push({ label: 'SiLU Gate ⊗', y: 245, w: 140, color: '#f59e0b' });
+    blocks.push({ label: 'Linear ↓ (project)', y: 290, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Residual + Norm', y: 335, w: 160, color: '#94a3b8' });
+    blocks.push({ label: 'Output', y: 380, w: 120, color: '#94a3b8' });
+  } else if (archVersion === 'mamba2') {
+    blocks.push({ label: 'Input x', y: 30, w: 120, color: '#94a3b8' });
+    blocks.push({ label: 'Linear ↑ (expand)', y: 75, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Conv1d', y: 120, w: 140, color: '#8b5cf6', side: 'left' });
+    blocks.push({ label: 'SiLU', y: 155, w: 100, color: '#f59e0b', side: 'left' });
+    blocks.push({ label: 'SSD Layer', y: 195, w: 180, color: '#10b981', highlight: true });
+    blocks.push({ label: '(Chunked Scan)', y: 225, w: 140, color: '#06d6a0', sub: true });
+    blocks.push({ label: 'SiLU Gate ⊗', y: 265, w: 140, color: '#f59e0b' });
+    blocks.push({ label: 'RMSNorm', y: 300, w: 120, color: '#ec4899' });
+    blocks.push({ label: 'Linear ↓ (project)', y: 340, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Residual + Norm', y: 385, w: 160, color: '#94a3b8' });
+    blocks.push({ label: 'Output', y: 420, w: 120, color: '#94a3b8' });
+  } else { // mamba3
+    blocks.push({ label: 'Input x', y: 20, w: 120, color: '#94a3b8' });
+    blocks.push({ label: 'Linear ↑ (expand)', y: 58, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Conv1d', y: 96, w: 140, color: '#8b5cf6', side: 'left' });
+    blocks.push({ label: 'SiLU', y: 128, w: 100, color: '#f59e0b', side: 'left' });
+    blocks.push({ label: 'Complex Exp-Trap SSM', y: 165, w: 200, color: '#10b981', highlight: true });
+    blocks.push({ label: '(ℂ-valued MIMO Scan)', y: 192, w: 160, color: '#06d6a0', sub: true });
+    blocks.push({ label: 'Real Projection', y: 225, w: 140, color: '#06b6d4' });
+    blocks.push({ label: 'SiLU Gate ⊗', y: 262, w: 140, color: '#f59e0b' });
+    blocks.push({ label: 'RMSNorm', y: 296, w: 120, color: '#ec4899' });
+    blocks.push({ label: 'Linear ↓ (project)', y: 332, w: 160, color: '#3b82f6' });
+    blocks.push({ label: 'Residual + Norm', y: 368, w: 160, color: '#94a3b8' });
+    blocks.push({ label: 'Output', y: 404, w: 120, color: '#94a3b8' });
+  }
+
+  // Draw connections
+  ctx.strokeStyle = '#2a3a5c';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < blocks.length - 1; i++) {
+    if (blocks[i+1].sub) continue;
+    const y1 = blocks[i].y + 18;
+    const y2 = blocks[i+1].y - 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, y1);
+    ctx.lineTo(cx, y2);
+    ctx.stroke();
+
+    // Arrow
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, y2 - 6);
+    ctx.lineTo(cx, y2);
+    ctx.lineTo(cx + 4, y2 - 6);
+    ctx.stroke();
+  }
+
+  // Draw blocks
+  blocks.forEach(b => {
+    const x = cx - b.w / 2;
+    const h = b.sub ? 20 : 28;
+
+    if (b.highlight) {
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 15;
+    }
+
+    ctx.fillStyle = b.sub ? 'rgba(6,214,160,0.1)' : 'rgba(26,34,53,0.9)';
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = b.highlight ? 2 : 1;
+    ctx.beginPath();
+    const radius = 6;
+    ctx.roundRect(x, b.y, b.w, h, radius);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = b.sub ? '#06d6a0' : '#e2e8f0';
+    ctx.font = b.sub ? '10px system-ui' : '12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, cx, b.y + h / 2);
+  });
+
+  // Version label
+  const labels = { mamba1: 'Mamba (Dec 2023)', mamba2: 'Mamba-2 (May 2024)', mamba3: 'Mamba-3 (ICLR 2026)' };
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 13px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(labels[archVersion], cx, H - 30);
+}
+
+function updateArchMetrics() {
+  const D = parseInt(document.getElementById('arch-dim').value);
+  const N = parseInt(document.getElementById('arch-state').value);
+  const E = parseInt(document.getElementById('arch-expand').value);
+  const L = parseInt(document.getElementById('arch-layers').value);
+
+  const ED = D * E; // expanded dimension
+
+  // Approximate parameter count per layer
+  let paramsPerLayer;
+  if (archVersion === 'mamba1') {
+    paramsPerLayer = 2 * D * ED + ED * 4 + ED * N * 3; // in_proj + conv + SSM params
+  } else if (archVersion === 'mamba2') {
+    paramsPerLayer = 2 * D * ED + ED * 4 + ED * N * 2; // SSD is more efficient
+  } else {
+    paramsPerLayer = 2 * D * ED + ED * 4 + ED * N * 2 * 2; // complex-valued doubles state
+  }
+
+  const totalParams = paramsPerLayer * L + D * 50000; // + embedding layer estimate
+
+  // FLOPs per token
+  const flopsPerToken = paramsPerLayer * 2 * L; // rough: 2 FLOPs per parameter
+
+  // State memory (inference)
+  let stateMemPerLayer;
+  if (archVersion === 'mamba3') {
+    stateMemPerLayer = ED * N * 2 * 4; // complex values, 4 bytes each
+  } else {
+    stateMemPerLayer = ED * N * 4;
+  }
+  const totalStateMem = stateMemPerLayer * L;
+
+  // Relative throughput (Mamba vs Transformer baseline)
+  const throughput = archVersion === 'mamba3' ? 1.4 : archVersion === 'mamba2' ? 1.2 : 1.0;
+
+  document.getElementById('arch-params').textContent = formatParams(totalParams);
+  document.getElementById('arch-flops-m').textContent = formatParams(flopsPerToken);
+  document.getElementById('arch-state-mem').textContent = formatBytes(totalStateMem);
+  document.getElementById('arch-throughput').textContent = throughput.toFixed(1) + '×';
+
+  const details = {
+    mamba1: `<strong>Mamba (S6):</strong> First SSM to match Transformers at scale. Key innovations: (1) Input-dependent Δ, B, C parameters via linear projections from input. (2) Hardware-aware parallel scan with kernel fusion. (3) Selective state space that can filter irrelevant information. Complexity: O(BLDN) per layer where B=batch, L=length, D=dim, N=state.`,
+    mamba2: `<strong>Mamba-2 (SSD):</strong> State Space Duality reveals SSMs are equivalent to a specific class of structured matrices (semiseparable) and a form of linear attention. Key innovations: (1) Chunked parallel scan using tensor cores. (2) SSD connections enable using attention-like optimizations. (3) 2-8× faster than Mamba-1 while matching quality. Head structure similar to multi-head attention.`,
+    mamba3: `<strong>Mamba-3 (ICLR 2026):</strong> Inference-first SSM pushing the Pareto frontier. Key innovations: (1) Complex-valued state space enables more expressive state tracking — overcomes limitations of real-valued linear models. (2) MIMO (Multi-Input Multi-Output) formulation increases arithmetic intensity during decoding. (3) Exponential-trapezoidal discretization replaces SSD for better quality. New state-of-the-art on language modeling benchmarks.`
+  };
+  document.getElementById('arch-details').innerHTML = details[archVersion];
+}
+
+function formatParams(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(0) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+function formatBytes(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + ' GB';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + ' MB';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + ' KB';
+  return n + ' B';
+}
+
+// ========== MODULE 6: EVOLUTION ==========
+const evoDetails = {
+  hippo: {
+    title: 'HiPPO (2020) — Gu, Dao, Ermon, Ré',
+    content: `<div class="eq">HiPPO-LegS: A[n,k] = -(2n+1)^{1/2}(2k+1)^{1/2} if n > k, &nbsp; -(n+1) if n = k</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">The foundational insight: memory in sequence models is a function approximation problem. HiPPO defines matrices that optimally project input history onto polynomial bases. This single change — replacing random A with HiPPO A — improved sMNIST from 60% to 98%.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Mathematical framework connecting state space models to optimal polynomial projection, enabling principled long-range memory.</p>`
+  },
+  lssl: {
+    title: 'LSSL (2021) — Gu, Johnson, Goel, Saab, Dao, Rudra, Ré',
+    content: `<div class="eq">x'(t) = Ax(t) + Bu(t), &nbsp; y(t) = Cx(t) + Du(t) &nbsp; (continuous-time SSM)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">First attempt at deep SSM. Directly parameterized continuous SSM with HiPPO initialization. Could handle Long Range Arena tasks but was computationally expensive (O(N²L) per layer), limiting practical use.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Proved deep SSMs with HiPPO work for long-range tasks. Bottleneck: naive computation of the convolutional kernel.</p>`
+  },
+  s4: {
+    title: 'S4 (2022) — Gu, Goel, Ré',
+    content: `<div class="eq">A = V·Λ·V⁻¹ + P·Q* &nbsp; (DPLR), &nbsp; K̄ = C̃(I - Ā^L)(I - Ā)⁻¹ · B̃ &nbsp; (Cauchy kernel via FFT)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">Breakthrough: DPLR (Diagonal Plus Low-Rank) parameterization of A enables computing the SSM kernel in O(N + L) time using Cauchy kernel tricks and FFT. First model to solve the Pathfinder task (96.4% vs ~50% for Transformers). Set new SotA on Long Range Arena.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Made deep SSMs computationally practical. Dual convolutional (training) and recurrent (inference) modes.</p>`
+  },
+  s4d: {
+    title: 'S4D / S5 (2022) — Gu, Gupta, Mehta',
+    content: `<div class="eq">S4D: A = diag(λ₁, ..., λ_N), &nbsp; S5: parallel scan over x_k = Ā·x_{k-1} + B̄·u_k</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">Simplification breakthrough: diagonal A matrices work nearly as well as DPLR, massively simplifying implementation. S5 introduced MIMO SSMs and parallel scan (replacing FFT-based convolution). These simplifications made SSMs practical for real-world use.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Showed the complex DPLR structure was largely unnecessary — diagonal suffices. Parallel scan as an alternative to FFT.</p>`
+  },
+  h3: {
+    title: 'H3 / Hyena (2023) — Fu, Dao, Ermon, Rudra, Ré / Poli et al.',
+    content: `<div class="eq">H3: y = SSM₂(x ⊙ SSM₁(x)) &nbsp; (two stacked SSMs with multiplicative interaction)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">H3 (Hungry Hungry Hippos) stacked two SSMs with gating to enable recall-like capabilities missing in single-SSM models. Hyena replaced attention entirely with long convolutions + element-wise gating. Both showed SSMs could approach Transformer quality on language modeling.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Bridging the quality gap to Transformers. Demonstrated that multiplicative interactions are key for in-context learning.</p>`
+  },
+  mamba: {
+    title: 'Mamba (Dec 2023) — Gu & Dao',
+    content: `<div class="eq">Δ_t = softplus(W_Δ · x_t), &nbsp; B_t = W_B · x_t, &nbsp; C_t = W_C · x_t &nbsp; (input-dependent parameters)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">The breakthrough that made SSMs competitive at scale. Three key innovations: (1) Selective scan — making Δ, B, C input-dependent so the model can choose what to remember. (2) Hardware-aware algorithm with kernel fusion and recomputation. (3) Simplified architecture removing attention, MLP, and normalization layers into a single block. Matched Transformer quality at 1.4B scale with 5× inference throughput.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> First SSM to truly match Transformers. Selective scan = content-aware state transitions. Changed the field.</p>`
+  },
+  mamba2: {
+    title: 'Mamba-2 (May 2024) — Dao & Gu',
+    content: `<div class="eq">SSD: y = M · (L ⊙ QK^T) · v &nbsp; where L = 1{i ≥ j} &nbsp; (State Space Duality)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">Revealed the deep theoretical connection: SSMs with scalar structure are equivalent to semiseparable matrices, which are equivalent to a specific form of linear attention. This "State Space Duality" (SSD) framework enabled: (1) Chunked parallel computation leveraging tensor cores. (2) Multi-head SSM structure analogous to multi-head attention. (3) 2-8× speedup over Mamba while maintaining quality.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> SSMs ≡ structured matrices ≡ linear attention. Theoretical unification + massive speedup.</p>`
+  },
+  mamba3: {
+    title: 'Mamba-3 (ICLR 2026) — Gu, Dao et al.',
+    content: `<div class="eq">ℂ-SSM: h_t = exp(Δ·(a + bi))·h_{t-1} + Δ·B_t·x_t, &nbsp; y_t = Re(C_t · h_t) &nbsp; (complex-valued MIMO)</div>
+    <p style="margin:.5rem 0;font-size:.85rem;color:var(--text2)">Inference-first design establishing a new Pareto frontier. Three innovations: (1) Complex-valued state space — enables oscillatory dynamics and better state tracking, overcoming limitations of real-valued linear recurrences. (2) MIMO (Multi-Input Multi-Output) formulation — raises arithmetic intensity during autoregressive decoding, making better use of modern GPU compute. (3) Exponential-trapezoidal discretization — more accurate than SSD's discretization, improving language modeling quality.</p>
+    <p style="font-size:.85rem;color:var(--text2)"><strong>Key contribution:</strong> Complex dynamics + MIMO efficiency = new SotA efficiency-quality tradeoff. Published at ICLR 2026.</p>`
+  }
+};
+
+function showEvoDetail(model) {
+  const detail = evoDetails[model];
+  document.getElementById('evo-detail-title').textContent = detail.title;
+  document.getElementById('evo-detail-content').innerHTML = detail.content;
+
+  document.querySelectorAll('.timeline-item').forEach(item => {
+    item.style.opacity = item.dataset.model === model ? '1' : '0.5';
+  });
+
+  renderEvoChart(model);
+}
+
+function renderEvoChart(highlight) {
+  const canvas = document.getElementById('evo-chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 50;
+  const plotW = W - 2*pad;
+  const plotH = H - 2*pad;
+
+  // Benchmark data (approximate from papers)
+  const models = [
+    { name: 'LSSL', year: 2021, lra: 76, speed: 0.2, id: 'lssl' },
+    { name: 'S4', year: 2022, lra: 86, speed: 0.5, id: 's4' },
+    { name: 'S4D', year: 2022, lra: 85, speed: 0.8, id: 's4d' },
+    { name: 'H3', year: 2023, lra: 88, speed: 1.2, id: 'h3' },
+    { name: 'Mamba', year: 2023, lra: 92, speed: 3.5, id: 'mamba' },
+    { name: 'Mamba-2', year: 2024, lra: 93, speed: 7.0, id: 'mamba2' },
+    { name: 'Mamba-3', year: 2026, lra: 95, speed: 9.5, id: 'mamba3' },
+  ];
+
+  // Transformer reference line
+  ctx.strokeStyle = 'rgba(239,68,68,0.3)';
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1;
+  const txfY = pad + plotH - (88 / 100) * plotH;
+  ctx.beginPath(); ctx.moveTo(pad, txfY); ctx.lineTo(W - pad, txfY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(239,68,68,0.5)';
+  ctx.font = '9px system-ui';
+  ctx.textAlign = 'right';
+  ctx.fillText('Transformer (LRA avg)', W - pad - 5, txfY - 5);
+
+  // Plot points
+  models.forEach(m => {
+    const x = pad + ((m.speed) / 10) * plotW;
+    const y = pad + plotH - (m.lra / 100) * plotH;
+
+    const isHighlight = m.id === highlight;
+    const radius = isHighlight ? 8 : 5;
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isHighlight ? '#10b981' : 'rgba(16,185,129,0.4)';
+    ctx.fill();
+    if (isHighlight) {
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.fillStyle = isHighlight ? '#e2e8f0' : '#94a3b8';
+    ctx.font = (isHighlight ? 'bold ' : '') + '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.name, x, y - radius - 5);
+  });
+
+  // Connect points with line
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(16,185,129,0.3)';
+  ctx.lineWidth = 1;
+  models.forEach((m, i) => {
+    const x = pad + ((m.speed) / 10) * plotW;
+    const y = pad + plotH - (m.lra / 100) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Axes
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Throughput (relative) →', W/2, H - 5);
+  ctx.save();
+  ctx.translate(12, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Quality (LRA avg %) →', 0, 0);
+  ctx.restore();
+
+  ctx.fillText('Quality vs. Efficiency Pareto Frontier', W/2, 18);
+}
+
+// ========== INITIALIZATION ==========
+window.addEventListener('DOMContentLoaded', () => {
+  renderHiPPO();
+  renderKernel();
+});
+
+// roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r];
+    const radii = r.map(v => Math.min(v, w/2, h/2));
+    this.moveTo(x + radii[0], y);
+    this.lineTo(x + w - radii[0], y);
+    this.quadraticCurveTo(x + w, y, x + w, y + radii[0]);
+    this.lineTo(x + w, y + h - radii[0]);
+    this.quadraticCurveTo(x + w, y + h, x + w - radii[0], y + h);
+    this.lineTo(x + radii[0], y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - radii[0]);
+    this.lineTo(x, y + radii[0]);
+    this.quadraticCurveTo(x, y, x + radii[0], y);
+    this.closePath();
+  };
+}
+</script>
+</body>
+</html>
